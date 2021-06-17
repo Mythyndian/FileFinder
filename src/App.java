@@ -5,12 +5,13 @@ import org.jsoup.select.Elements;
 
 import java.io.*;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class App {
     public static void main(String[] args) throws Exception {
-        findFiles("png", "https://github.com/");
-        findLinks("https://github.com/");
+        collectData("https://github.com/", "png");
 
     }
 
@@ -30,29 +31,22 @@ public class App {
     // Method for finding files with certain extension
     public static void findFiles(String extension, String url) throws IOException {
         String clearUrl;
-        int counter = 0;
         if (isUrl(url)) {
             Document doc = Jsoup.connect(url).get();
             Elements links = doc.getElementsByAttribute("href");
             for (Element link : links) {
                 String linkHref = link.attr("href");
                 if (linkHref.endsWith("." + extension)) {
-                    // TODO link find method
-                    if (url.contains("https://")) {
-                        clearUrl = url.replace("/", "");
-                        clearUrl = clearUrl.replace("https:", "");
-                    } else {
-                        clearUrl = url.replace("/", "");
-                        clearUrl = clearUrl.replace("http:", "");
-                    }
-
+                    clearUrl = url.substring(8);
+                    clearUrl = clearUrl.replaceAll("\\W", ".");
+                    System.out.println(clearUrl);
                     String filename = clearUrl + "_" + extension + "s";
                     writeResults(filename, linkHref);
                 }
             }
 
         } else
-            System.out.println("Incorect URL.");
+            System.out.println("Incorrect URL.");
     }
 
     public static void writeResults(String filename, String data) {
@@ -78,25 +72,31 @@ public class App {
         }
     }
 
-    public static void findLinks(String url) throws IOException {
+    public static List<String> findLinks(String url) throws IOException {
         String clearUrl;
         String linkHref;
+        List subpages = new ArrayList();
         if (isUrl(url)) {
             Document doc = Jsoup.connect(url).get();
             Elements links = doc.getElementsByTag("a");
             for (Element link : links) {
                 linkHref = link.attr("href");
-                if (url.contains("https://")) {
-                    clearUrl = url.replace("/", "");
-                    clearUrl = clearUrl.replace("https:", "");
-                } else {
-                    clearUrl = url.replace("/", "");
-                    clearUrl = clearUrl.replace("http:", "");
+                if (linkHref.startsWith("/") & linkHref != "/") {
+                    subpages.add(linkHref);
                 }
 
-                String filename = clearUrl + "_" + "links";
-                writeResults(filename, linkHref);
             }
         }
+        return subpages;
+    }
+
+    public static void collectData(String startUrl, String extension) throws IOException {
+        List pages = findLinks(startUrl);
+        for (Object page : pages) {
+//            System.out.println(startUrl + page.toString().substring(1));
+            findFiles(extension, startUrl + page.toString().substring(1));
+        }
+
+
     }
 }
